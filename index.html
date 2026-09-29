@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en-ZA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting poll</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F1F4F5;
+  --panel: #FFFFFF;
+  --ink: #13262F;
+  --muted: #56666E;
+  --line: #D6DDE1;
+  --yes: #1E7F5C;
+  --yes-soft: #DAEEE5;
+  --maybe: #B97A0B;
+  --maybe-bar: #E2A93A;
+  --maybe-soft: #F7E9C8;
+  --no-soft: #ECEFF1;
+  --focus: #1D5C8C;
+  --danger: #A8261E;
+  --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --display: 'Bricolage Grotesque', 'Atkinson Hyperlegible', system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--body); background: var(--paper); color: var(--ink);
+  font-size: 16px; line-height: 1.5; padding: 2.5rem 1rem 5rem;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+.wide { max-width: 1120px; margin: 0 auto; }
+h1 {
+  font-family: var(--display); font-weight: 700; letter-spacing: -0.015em;
+  font-size: clamp(2rem, 6vw, 3rem); line-height: 1.05; margin-bottom: 0.75rem;
+}
+h2 { font-family: var(--display); font-weight: 600; font-size: 1.35rem; line-height: 1.2; margin-bottom: 0.35rem; }
+h3 { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.5rem; }
+p.lede { color: var(--muted); font-size: 1.05rem; max-width: 60ch; }
+.meta { color: var(--muted); margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; }
+.meta strong { color: var(--ink); font-weight: 700; }
+section { margin-top: 2.5rem; }
+.hint { color: var(--muted); font-size: 0.925rem; margin-bottom: 1rem; max-width: 62ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; }
+.banner { border-radius: 8px; padding: 0.9rem 1.1rem; margin-top: 1.5rem; border: 1px solid; }
+.banner.final { background: var(--yes-soft); border-color: #9FD0BB; }
+.banner.closed { background: var(--no-soft); border-color: var(--line); }
+.banner.demo { background: var(--maybe-soft); border-color: #E7CD8F; font-size: 0.925rem; }
+header.top { padding-bottom: 1.75rem; border-bottom: 2px solid var(--ink); }
+
+/* Form controls */
+label.field { display: block; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem; }
+.field-note { font-weight: 400; color: var(--muted); }
+input[type=text], input[type=password], textarea, select {
+  width: 100%; font: inherit; color: var(--ink); background: #FAFBFB;
+  border: 1.5px solid var(--line); border-radius: 6px; padding: 0.6rem 0.75rem;
+}
+textarea { min-height: 5rem; resize: vertical; }
+.row { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+.stack > * + * { margin-top: 1rem; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 2px rgba(29,92,140,0.25); }
+
+button { font: inherit; cursor: pointer; }
+.btn {
+  border: 1.5px solid var(--ink); background: var(--ink); color: #fff;
+  border-radius: 6px; padding: 0.7rem 1.2rem; font-weight: 700;
+}
+.btn:hover { background: #24404D; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.ghost:hover { background: #E3E9EC; }
+.btn.small { padding: 0.35rem 0.7rem; font-size: 0.875rem; font-weight: 400; }
+.btn.danger { border-color: var(--danger); color: var(--danger); background: transparent; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.linkbtn { background: none; border: none; color: var(--focus); text-decoration: underline; padding: 0; }
+
+/* Create: calendar */
+.cal { max-width: 360px; }
+.cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.cal-head strong { font-family: var(--display); font-size: 1.05rem; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-dow { font-size: 0.75rem; color: var(--muted); text-align: center; padding: 0.2rem 0; }
+.cal-day {
+  aspect-ratio: 1; border: 1px solid transparent; border-radius: 6px; background: #F6F8F9;
+  font-size: 0.9rem; color: var(--ink);
+}
+.cal-day.weekend { color: var(--muted); background: transparent; }
+.cal-day:hover:not(:disabled) { border-color: var(--focus); }
+.cal-day[aria-pressed=true] { background: var(--ink); color: #fff; }
+.cal-day:disabled { color: #BCC5CA; background: transparent; cursor: default; }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 0.4rem; }
+.chip {
+  border: 1.5px solid var(--line); background: #FAFBFB; border-radius: 6px; padding: 0.4rem 0;
+  font-size: 0.9rem; font-variant-numeric: tabular-nums;
+}
+.chip[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: #fff; }
+.slot-preview { list-style: none; display: grid; gap: 0.25rem; }
+.slot-preview li { display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid var(--line); padding: 0.3rem 0; font-variant-numeric: tabular-nums; }
+.slot-preview li.off { color: #9AA6AC; text-decoration: line-through; }
+.copy-box { display: flex; gap: 0.5rem; }
+.copy-box input { font-size: 0.9rem; }
+
+/* Profile chart: the one bold element */
+.profile { overflow-x: auto; padding-bottom: 0.25rem; }
+.profile-inner { display: flex; align-items: flex-end; gap: 6px; min-height: 210px; padding-top: 1.5rem; }
+.day-group { display: flex; flex-direction: column; }
+.day-bars { display: flex; align-items: flex-end; gap: 4px; height: 170px; border-bottom: 2px solid var(--ink); padding: 0 4px; }
+.day-label { font-size: 0.8rem; color: var(--muted); padding: 0.35rem 4px 0; white-space: nowrap; }
+.bar { width: 32px; height: 100%; display: flex; flex-direction: column-reverse; position: relative; }
+.bar .y { background: var(--yes); }
+.bar .m { background: var(--maybe-bar); }
+.bar.blocked { opacity: 0.3; }
+.bar.best { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 1px; }
+.bar .tick { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 6px;
+  font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar .count { position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; }
+.day-group .ticks-space { height: 1.3rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; font-size: 0.875rem; color: var(--muted); margin-top: 0.75rem; }
+.sw { display: inline-block; width: 0.8rem; height: 0.8rem; vertical-align: -1px; margin-right: 0.35rem; border-radius: 2px; }
+
+/* Ranked list */
+.ranked { list-style: none; counter-reset: rank; }
+.ranked li { display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.75rem; align-items: baseline;
+  padding: 0.7rem 0; border-bottom: 1px solid var(--line); }
+.ranked li::before { counter-increment: rank; content: counter(rank); font-family: var(--display); font-weight: 700; font-size: 1.2rem; }
+.ranked .when { font-weight: 700; }
+.ranked .who { color: var(--muted); font-size: 0.875rem; }
+.ranked .score { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.ranked .warn { color: var(--danger); font-size: 0.875rem; }
+.ranked .okreq { color: var(--yes); font-size: 0.875rem; }
+
+/* Answer form */
+.day-block + .day-block { margin-top: 1.25rem; }
+.day-title { font-family: var(--display); font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem; }
+.ans-row { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: 0.75rem; align-items: center;
+  padding: 0.45rem 0; border-top: 1px solid var(--line); }
+.ans-time { font-variant-numeric: tabular-nums; font-weight: 700; }
+.ans-tally { color: var(--muted); font-size: 0.85rem; }
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; }
+.seg span { display: block; padding: 0.4rem 0.7rem; font-size: 0.875rem; cursor: pointer; white-space: nowrap; border-left: 1px solid var(--line); }
+.seg label:first-child span { border-left: none; }
+.seg input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: -3px; }
+.seg input[value=y]:checked + span { background: var(--yes); color: #fff; }
+.seg input[value=m]:checked + span { background: var(--maybe-bar); color: var(--ink); }
+.seg input[value=n]:checked + span { background: #5E6E76; color: #fff; }
+
+/* Matrix */
+.matrix-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+table.matrix { border-collapse: separate; border-spacing: 0; font-size: 0.875rem; min-width: 100%; }
+.matrix th, .matrix td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+.matrix thead th { font-weight: 400; color: var(--muted); vertical-align: bottom; }
+.matrix thead th b { display: block; color: var(--ink); }
+.matrix th.name, .matrix td.name { position: sticky; left: 0; background: var(--panel); text-align: left; z-index: 1;
+  border-right: 1px solid var(--line); max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
+.matrix td.c-y { background: var(--yes-soft); color: var(--yes); font-weight: 700; }
+.matrix td.c-m { background: var(--maybe-soft); color: var(--maybe); }
+.matrix td.c-n { color: #9AA6AC; }
+.matrix td.c-none { color: #B8C1C6; }
+.matrix .best-col { box-shadow: inset 2px 0 0 var(--focus), inset -2px 0 0 var(--focus); }
+.matrix tfoot td { font-weight: 700; font-variant-numeric: tabular-nums; }
+.matrix tfoot td.name { font-weight: 400; color: var(--muted); }
+.tag { display: inline-block; font-size: 0.72rem; border: 1px solid var(--muted); color: var(--muted);
+  border-radius: 999px; padding: 0 0.45rem; margin-left: 0.35rem; vertical-align: 1px; }
+.tag.you { border-color: var(--focus); color: var(--focus); }
+tr.pending td.name { color: var(--muted); font-style: italic; }
+.comments { margin-top: 1rem; list-style: none; }
+.comments li { padding: 0.35rem 0; border-bottom: 1px solid var(--line); font-size: 0.925rem; }
+
+.toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 150%);
+  background: var(--ink); color: #fff; padding: 0.7rem 1.2rem; border-radius: 8px; max-width: 90vw;
+  transition: transform 0.25s ease; z-index: 50; }
+.toast:empty { display: none; }
+.toast.show { transform: translate(-50%, 0); }
+.error { color: var(--danger); }
+.loading { color: var(--muted); padding: 3rem 0; }
+.hidden { display: none !important; }
+
+@media (max-width: 600px) {
+  body { padding-top: 1.5rem; }
+  .row { grid-template-columns: 1fr; }
+  .ans-row { grid-template-columns: 1fr auto; }
+  .ans-tally { grid-column: 1; grid-row: 2; }
+  .seg { grid-column: 2; grid-row: 1 / span 2; }
+  .seg span { padding: 0.45rem 0.55rem; }
+}
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+</style>
+</head>
+<body>
+<main id="app"><p class="loading wrap">Loading…</p></main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ── CONFIG ──────────────────────────────────────────────────────────────
+   Paste the Apps Script web-app URL (ends in /exec) between the quotes.
+   Leave it empty to run in demo mode: everything is stored in this
+   browser only, which is useful for trying the page out.              */
+const API_URL = '';
+const TZ_NOTE = 'All times are South African time (SAST).';
+/* ────────────────────────────────────────────────────────────────────── */
+
+const DEMO = !API_URL;
+const params = new URLSearchParams(location.search);
+const app = document.getElementById('app');
+
+/* ── Small DOM helper: text is always set with textContent ── */
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (k === 'style') el.style.cssText = v;
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid == null || kid === false) continue;
+    el.appendChild(typeof kid === 'string' || typeof kid === 'number' ? document.createTextNode(String(kid)) : kid);
+  }
+  return el;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function store(key, val) {
+  try {
+    if (val === undefined) return JSON.parse(localStorage.getItem(key) || 'null');
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) { return null; }
+}
+
+/* ── Time formatting (all times are SAST wall-clock strings) ── */
+const pad = n => String(n).padStart(2, '0');
+function parts(start) {
+  const [d, t] = start.split('T');
+  const [y, mo, da] = d.split('-').map(Number);
+  const [hh, mm] = t.split(':').map(Number);
+  return { y, mo, da, hh, mm, date: d };
+}
+function dateLabel(date, long) {
+  const [y, mo, da] = date.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, da)).toLocaleDateString('en-ZA', {
+    timeZone: 'UTC', weekday: long ? 'long' : 'short', day: 'numeric', month: long ? 'long' : 'short'
+  });
+}
+function timeRange(start, dur) {
+  const p = parts(start);
+  const end = p.hh * 60 + p.mm + dur;
+  return `${pad(p.hh)}:${pad(p.mm)}–${pad(Math.floor(end / 60) % 24)}:${pad(end % 60)}`;
+}
+function slotLabel(s, dur) { return `${dateLabel(parts(s.start).date)}, ${timeRange(s.start, dur)}`; }
+const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+/* ── API ── */
+async function api(payload) {
+  if (DEMO) return mockApi(payload);
+  let res;
+  try {
+    res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+  } catch (e) {
+    throw new Error('Could not reach the server. Check your connection and try again.');
+  }
+  const data = await res.json().catch(() => ({ ok: false, error: 'The server sent an unreadable reply.' }));
+  if (!data.ok) { const e = new Error(data.error || 'The request failed.'); e.code = data.code; throw e; }
+  return data;
+}
+
+/* Demo backend: mirrors Code.gs, stored in localStorage. */
+function mockApi(p) {
+  const db = store('poll-demo-db') || { polls: {}, responses: [] };
+  const save = () => store('poll-demo-db', db);
+  const fail = (msg, code) => { const e = new Error(msg); e.code = code; throw e; };
+  const rid = () => Math.random().toString(36).slice(2, 12);
+  const poll = db.polls[p.poll];
+  switch (p.action) {
+    case 'create': {
+      if (!p.title) fail('Give the meeting a title.');
+      if (!p.slots.length) fail('Add at least one time option.');
+      const id = rid().slice(0, 8), adminKey = rid() + rid();
+      const slots = p.slots.map((s, i) => ({ id: 's' + (i + 1), start: s.start })).sort((a, b) => a.start < b.start ? -1 : 1);
+      db.polls[id] = { id, title: p.title, details: p.details || '', location: p.location || '',
+        durationMin: p.durationMin, slots, required: p.required || [], adminKey, closed: false, finalSlot: '' };
+      save();
+      return { ok: true, id, adminKey };
+    }
+    case 'get': {
+      if (!poll) fail('No poll matches this link. Check that you copied all of it.', 'not_found');
+      const { adminKey, ...pub } = poll;
+      return { ok: true, poll: pub, isAdmin: !!p.admin && p.admin === adminKey,
+        responses: db.responses.filter(r => r.pollId === poll.id).map(({ token, pollId, ...r }) => r) };
+    }
+    case 'respond': {
+      if (!poll) fail('No poll matches this link.', 'not_found');
+      if (poll.closed) fail('This poll is closed.', 'closed');
+      const name = String(p.name || '').trim().slice(0, 60);
+      if (!name) fail('Enter your name.');
+      const rows = db.responses.filter(r => r.pollId === poll.id);
+      const mine = rows.find(r => r.rid === p.rid && r.token === p.token);
+      if (rows.some(r => r !== mine && norm(r.name) === norm(name)))
+        fail(`Someone called ${name} has already answered. If that was you on another device, ask the organiser to remove the old entry, or add your surname.`, 'name_taken');
+      if (mine) { Object.assign(mine, { name, answers: p.answers, comment: p.comment || '' }); save(); return { ok: true, rid: mine.rid, token: mine.token }; }
+      const r = { pollId: poll.id, rid: rid(), token: rid() + rid(), name, answers: p.answers, comment: p.comment || '' };
+      db.responses.push(r); save();
+      return { ok: true, rid: r.rid, token: r.token };
+    }
+    case 'admin': {
+      if (!poll || p.admin !== poll.adminKey) fail('That admin link is not valid.', 'not_admin');
+      if (p.op === 'close') poll.closed = !!p.value;
+      if (p.op === 'final') poll.finalSlot = p.value || '';
+      if (p.op === 'required') poll.required = p.value;
+      if (p.op === 'delete') db.responses = db.responses.filter(r => !(r.pollId === poll.id && r.rid === p.value));
+      save();
+      return { ok: true };
+    }
+  }
+  fail('Unknown action.');
+}
+
+/* ── Analysis ──────────────────────────────────────────────────────────
+   For each slot: count Yes and If-need-be answers, and check the
+   required attendees. A slot where any required person said No (or
+   left it blank) is blocked, however many others can come.
+   Ranking: not blocked, then most Yes, then most Yes + If need be,
+   then earliest.                                                     */
+function analyse(poll, responses) {
+  const byName = new Map(responses.map(r => [norm(r.name), r]));
+  const reqPending = poll.required.filter(n => !byName.has(norm(n)));
+  const stats = poll.slots.map((slot, idx) => {
+    const yes = [], maybe = [], no = [];
+    for (const r of responses) {
+      const a = r.answers[slot.id];
+      (a === 'y' ? yes : a === 'm' ? maybe : no).push(r.name);
+    }
+    const blockedBy = poll.required.filter(n => {
+      const r = byName.get(norm(n));
+      return r && !['y', 'm'].includes(r.answers[slot.id]);
+    });
+    return { slot, idx, yes, maybe, no, blockedBy, ok: blockedBy.length === 0 };
+  });
+  const ranked = [...stats].sort((a, b) =>
+    (b.ok - a.ok) || (b.yes.length - a.yes.length) ||
+    ((b.yes.length + b.maybe.length) - (a.yes.length + a.maybe.length)) || (a.idx - b.idx));
+  const top = ranked[0];
+  const best = responses.length && top && top.ok && (top.yes.length + top.maybe.length) > 0 ? top.slot.id : null;
+  return { stats, ranked, best, reqPending };
+}
+
+/* ═════════════════════ Create page ═════════════════════ */
+function renderCreate() {
+  document.title = 'New meeting poll';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const state = {
+    viewY: today.getFullYear(), viewM: today.getMonth(),
+    dates: new Set(), times: new Set(), removed: new Set()
+  };
+  const TIMES = [];
+  for (let m = 7 * 60; m <= 17 * 60; m += 30) TIMES.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
+
+  const title = h('input', { type: 'text', id: 'f-title', maxlength: 120, placeholder: 'e.g. River connectivity project meeting' });
+  const details = h('textarea', { id: 'f-details', maxlength: 1000, placeholder: 'Agenda, purpose, or anything people should know' });
+  const location_ = h('input', { type: 'text', id: 'f-loc', maxlength: 200, placeholder: 'e.g. Room F210, Howard College, or Teams' });
+  const duration = h('select', { id: 'f-dur' },
+    [30, 45, 60, 90, 120, 180].map(m => h('option', { value: m, selected: m === 60 }, m < 60 ? `${m} minutes` : `${m / 60} hour${m > 60 ? 's' : ''}`.replace('1.5 hours', '1½ hours'))));
+  const required = h('textarea', { id: 'f-req', placeholder: 'One name per line' });
+  const key = h('input', { type: 'password', id: 'f-key', autocomplete: 'current-password', value: store('poll-create-key') || '' });
+
+  const calBox = h('div', { class: 'cal' });
+  const chipBox = h('div', { class: 'chips', role: 'group', 'aria-label': 'Start times' });
+  const previewBox = h('div');
+  const errBox = h('p', { class: 'error', role: 'alert' });
+  const resultBox = h('div');
+
+  function drawCal() {
+    calBox.replaceChildren();
+    const first = new Date(state.viewY, state.viewM, 1);
+    const days = new Date(state.viewY, state.viewM + 1, 0).getDate();
+    const offset = (first.getDay() + 6) % 7; // Monday first
+    const monthName = first.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' });
+    const canBack = state.viewY > today.getFullYear() || state.viewM > today.getMonth();
+    calBox.append(
+      h('div', { class: 'cal-head' },
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Previous month', disabled: !canBack,
+          onclick: () => { if (--state.viewM < 0) { state.viewM = 11; state.viewY--; } drawCal(); } }, '‹'),
+        h('strong', { 'aria-live': 'polite' }, monthName),
+        h('button', { class: 'btn ghost small', type: 'button', 'aria-label': 'Next month',
+          onclick: () => { if (++state.viewM > 11) { state.viewM = 0; state.viewY++; } drawCal(); } }, '›')),
+      h('div', { class: 'cal-grid' },
+        ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d => h('div', { class: 'cal-dow', 'aria-hidden': 'true' }, d)),
+        Array.from({ length: offset }, () => h('div')),
+        Array.from({ length: days }, (_, i) => {
+          const d = new Date(state.viewY, state.viewM, i + 1);
+          const iso = `${state.viewY}-${pad(state.viewM + 1)}-${pad(i + 1)}`;
+          const dow = d.getDay();
+          return h('button', {
+            type: 'button', class: 'cal-day' + (dow === 0 || dow === 6 ? ' weekend' : ''),
+            'aria-pressed': state.dates.has(iso) ? 'true' : 'false', disabled: d < today,
+            'aria-label': dateLabel(iso, true),
+            onclick: () => { state.dates.has(iso) ? state.dates.delete(iso) : state.dates.add(iso); drawCal(); drawPreview(); }
+          }, i + 1);
+        }))
+    );
+  }
+
+  function drawChips() {
+    chipBox.replaceChildren(...TIMES.map(t => h('button', {
+      type: 'button', class: 'chip', 'aria-pressed': state.times.has(t) ? 'true' : 'false',
+      onclick: () => { state.times.has(t) ? state.times.delete(t) : state.times.add(t); drawChips(); drawPreview(); }
+    }, t)));
+  }
+
+  function candidateSlots() {
+    const out = [];
+    for (const d of [...state.dates].sort()) for (const t of [...state.times].sort()) out.push(`${d}T${t}`);
+    return out;
+  }
+
+  function drawPreview() {
+    const all = candidateSlots();
+    const dur = Number(duration.value);
+    const kept = all.filter(s => !state.removed.has(s));
+    previewBox.replaceChildren(
+      all.length === 0
+        ? h('p', { class: 'hint' }, 'Pick at least one date and one start time. Every date is combined with every start time; remove any combination you don\'t want.')
+        : h('div', {},
+            h('p', { class: 'hint' }, `${kept.length} time option${kept.length === 1 ? '' : 's'}${kept.length > 60 ? ' (the limit is 60; remove some)' : ''}. ${kept.length > 15 ? 'People answer more carefully with 15 or fewer.' : ''}`),
+            h('ul', { class: 'slot-preview' }, all.map(s => {
+              const off = state.removed.has(s);
+              return h('li', { class: off ? 'off' : '' },
+                h('span', {}, slotLabel({ start: s }, dur)),
+                h('button', { type: 'button', class: 'linkbtn',
+                  onclick: () => { off ? state.removed.delete(s) : state.removed.add(s); drawPreview(); } }, off ? 'Restore' : 'Remove'));
+            })))
+    );
+  }
+  duration.addEventListener('change', drawPreview);
+
+  async function create(ev) {
+    const btn = ev.currentTarget;
+    errBox.textContent = '';
+    const slots = candidateSlots().filter(s => !state.removed.has(s));
+    if (!title.value.trim()) { errBox.textContent = 'Give the meeting a title.'; title.focus(); return; }
+    if (!slots.length) { errBox.textContent = 'Add at least one time option.'; return; }
+    if (slots.length > 60) { errBox.textContent = 'Keep it to 60 time options or fewer.'; return; }
+    if (!DEMO && !key.value) { errBox.textContent = 'Enter the organiser passphrase.'; key.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const res = await api({
+        action: 'create', createKey: key.value, title: title.value, details: details.value,
+        location: location_.value, durationMin: Number(duration.value),
+        slots: slots.map(start => ({ start })),
+        required: required.value.split('\n').map(s => s.trim()).filter(Boolean)
+      });
+      store('poll-create-key', key.value);
+      store('poll-admin-' + res.id, res.adminKey);
+      const base = location.origin + location.pathname;
+      const share = `${base}?poll=${res.id}`;
+      const admin = `${share}&admin=${encodeURIComponent(res.adminKey)}`;
+      const saved = store('poll-mine') || [];
+      saved.unshift({ id: res.id, title: title.value.trim(), admin });
+      store('poll-mine', saved.slice(0, 30));
+      resultBox.replaceChildren(h('div', { class: 'panel stack' },
+        h('h2', {}, 'Poll created'),
+        copyField('Share this link with everyone', share),
+        copyField('Your admin link (keep it private; it lets you manage the poll)', admin),
+        h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: admin }, 'Open the poll'))
+      ));
+      resultBox.scrollIntoView({ behavior: 'smooth' });
+      btn.textContent = 'Poll created';
+    } catch (e) {
+      errBox.textContent = e.message;
+      btn.disabled = false; btn.textContent = 'Create poll';
+    }
+  }
+
+  const mine = store('poll-mine') || [];
+  app.replaceChildren(h('div', { class: 'wrap' },
+    h('header', { class: 'top' },
+      h('h1', {}, 'New meeting poll'),
+      h('p', { class: 'lede' }, 'Offer a few specific times. Everyone marks each one Yes, If need be, or No, and the page ranks the options.')),
+    DEMO ? h('div', { class: 'banner demo' }, 'Demo mode: polls are saved in this browser only. Set API_URL in index.html to share polls with others.') : null,
+    h('section', { class: 'stack' },
+      h('h2', {}, 'The meeting'),
+      h('div', {}, h('label', { class: 'field', for: 'f-title' }, 'Title'), title),
+      h('div', {}, h('label', { class: 'field', for: 'f-details' }, 'Details ', h('span', { class: 'field-note' }, '(optional)')), details),
+      h('div', { class: 'row' },
+        h('div', {}, h('label', { class: 'field', for: 'f-loc' }, 'Where ', h('span', { class: 'field-note' }, '(optional)')), location_),
+        h('div', {}, h('label', { class: 'field', for: 'f-dur' }, 'Length'), duration))),
+    h('section', {},
+      h('h2', {}, 'Time options'),
+      h('p', { class: 'hint' }, 'Choose dates, then start times. ' + TZ_NOTE),
+      h('div', { class: 'row' }, calBox, h('div', {}, h('h3', { style: 'margin-top:0' }, 'Start times'), chipBox)),
+      h('h3', {}, 'Options people will see'), previewBox),
+    h('section', { class: 'stack' },
+      h('h2', {}, 'Required attendees'),
+      h('p', { class: 'hint' }, 'Optional. A slot is ruled out if any of these people can\'t make it. They\'ll see their names suggested when they answer, which keeps the spelling consistent.'),
+      required),
+    h('section', { class: 'stack' },
+      DEMO ? null : h('div', {}, h('label', { class: 'field', for: 'f-key' }, 'Organiser passphrase'), key),
+      h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'button', onclick: create }, 'Create poll')),
+      errBox, resultBox),
+    mine.length ? h('section', {},
+      h('h2', {}, 'Polls you created on this device'),
+      h('ul', { class: 'slot-preview' }, mine.map(m => h('li', {}, h('a', { href: m.admin }, m.title))))) : null
+  ));
+  drawCal(); drawChips(); drawPreview();
+}
+
+function copyField(labelText, value) {
+  const input = h('input', { type: 'text', readonly: true, value, onfocus: e => e.target.select() });
+  return h('div', {},
+    h('label', { class: 'field' }, labelText),
+    h('div', { class: 'copy-box' }, input,
+      h('button', { class: 'btn ghost small', type: 'button', onclick: async () => {
+        try { await navigator.clipboard.writeText(value); toast('Link copied.'); }
+        catch (e) { input.select(); toast('Press Ctrl+C to copy.'); }
+      } }, 'Copy')));
+}
+
+/* ═════════════════════ Poll page ═════════════════════ */
+const pollId = params.get('poll');
+let adminKey = params.get('admin') || store('poll-admin-' + pollId) || '';
+let data = null;
+let draft = null;
+
+async function loadPoll(quiet) {
+  try {
+    data = await api({ action: 'get', poll: pollId, admin: adminKey || undefined });
+    if (data.isAdmin) store('poll-admin-' + pollId, adminKey);
+    renderPoll();
+  } catch (e) {
+    if (!quiet) app.replaceChildren(h('div', { class: 'wrap' },
+      h('h1', {}, 'Poll not found'), h('p', { class: 'lede' }, e.message),
+      h('p', { style: 'margin-top:1rem' }, h('a', { href: location.pathname }, 'Create a new poll'))));
+  }
+}
+
+function renderPoll() {
+  const { poll, responses, isAdmin } = data;
+  const dur = poll.durationMin;
+  const me = store('poll-me-' + poll.id);
+  const myRow = me && responses.find(r => r.rid === me.rid);
+  const a = analyse(poll, responses);
+  const finalSlot = poll.slots.find(s => s.id === poll.finalSlot);
+  document.title = poll.title;
+
+  if (!draft) draft = {
+    name: myRow ? myRow.name : '',
+    comment: myRow ? myRow.comment : '',
+    answers: myRow ? { ...myRow.answers } : {}
+  };
+
+  const slotsByDate = new Map();
+  for (const s of poll.slots) {
+    const d = parts(s.start).date;
+    if (!slotsByDate.has(d)) slotsByDate.set(d, []);
+    slotsByDate.get(d).push(s);
+  }
+  const statOf = id => a.stats.find(x => x.slot.id === id);
+
+  /* Header */
+  const header = h('header', { class: 'top' },
+    h('h1', {}, poll.title),
+    poll.details ? h('p', { class: 'lede', style: 'white-space:pre-line' }, poll.details) : null,
+    h('div', { class: 'meta' },
+      poll.location ? h('span', {}, 'Where: ', h('strong', {}, poll.location)) : null,
+      h('span', {}, 'Length: ', h('strong', {}, dur < 60 ? `${dur} min` : `${dur / 60} h`)),
+      h('span', {}, h('strong', {}, String(responses.length)), responses.length === 1 ? ' response' : ' responses'),
+      h('span', {}, TZ_NOTE)));
+
+  const banners = [
+    DEMO ? h('div', { class: 'banner demo' }, 'Demo mode: answers are saved in this browser only.') : null,
+    finalSlot ? h('div', { class: 'banner final' }, h('strong', {}, 'Meeting confirmed: '), `${dateLabel(parts(finalSlot.start).date, true)}, ${timeRange(finalSlot.start, dur)}.`) : null,
+    poll.closed && !finalSlot ? h('div', { class: 'banner closed' }, 'This poll is closed. You can still see everyone\'s answers.') : null
+  ];
+
+  /* Overview: availability profile + ranked list */
+  const maxN = Math.max(1, responses.length);
+  const profile = h('div', { class: 'profile', role: 'img',
+      'aria-label': 'Chart of how many people can attend each time option' },
+    h('div', { class: 'profile-inner' }, [...slotsByDate].map(([date, slots]) =>
+      h('div', { class: 'day-group' },
+        h('div', { class: 'day-bars' }, slots.map(s => {
+          const st = statOf(s.id);
+          const y = st.yes.length, m = st.maybe.length;
+          const title = `${slotLabel(s, dur)}: ${y} yes, ${m} if need be` + (st.ok ? '' : `. Ruled out: ${st.blockedBy.join(', ')} can't attend`);
+          return h('div', { class: 'bar' + (st.ok ? '' : ' blocked') + (s.id === a.best ? ' best' : ''), title },
+            h('div', { class: 'y', style: `height:${y / maxN * 100}%` }),
+            h('div', { class: 'm', style: `height:${m / maxN * 100}%` }),
+            y + m ? h('span', { class: 'count', style: `bottom:${(y + m) / maxN * 100}%` }, y + m) : null,
+            h('span', { class: 'tick' }, parts(s.start).hh + (parts(s.start).mm ? ':' + pad(parts(s.start).mm) : '')));
+        })),
+        h('div', { class: 'ticks-space' }),
+        h('div', { class: 'day-label' }, dateLabel(date))))));
+
+  const legend = h('div', { class: 'legend' },
+    h('span', {}, h('span', { class: 'sw', style: 'background:var(--yes)' }), 'Yes'),
+    h('span', {}, h('span', { class: 'sw', style: 'background:var(--maybe-bar)' }), 'If need be'),
+    poll.required.length ? h('span', {}, h('span', { class: 'sw', style: 'background:var(--yes);opacity:.3' }), 'Faded: a required person can\'t make it') : null,
+    a.best ? h('span', {}, h('span', { class: 'sw', style: 'outline:2px solid var(--focus);outline-offset:1px' }), 'Best option') : null);
+
+  const topN = a.ranked.slice(0, Math.min(5, a.ranked.length));
+  const ranked = responses.length === 0
+    ? h('p', { class: 'hint' }, 'No answers yet. Be the first: fill in your availability below.')
+    : h('ol', { class: 'ranked' }, topN.map(st => h('li', {},
+        h('div', {},
+          h('div', { class: 'when' }, slotLabel(st.slot, dur)),
+          st.yes.length ? h('div', { class: 'who' }, 'Yes: ' + st.yes.join(', ')) : null,
+          st.maybe.length ? h('div', { class: 'who' }, 'If need be: ' + st.maybe.join(', ')) : null,
+          poll.required.length ? (st.ok
+            ? h('div', { class: 'okreq' }, a.reqPending.length ? `No required person has ruled this out; still waiting on ${a.reqPending.join(', ')}.` : 'All required people can attend.')
+            : h('div', { class: 'warn' }, `Ruled out: ${st.blockedBy.join(', ')} can't attend.`)) : null),
+        h('div', { class: 'score' }, h('strong', {}, `${st.yes.length}`), ` yes`, h('br'), `${st.maybe.length} if need be`))));
+
+  const overview = h('section', {},
+    h('h2', {}, 'Best options so far'),
+    h('p', { class: 'hint' }, poll.required.length
+      ? 'Ranked by whether all required people can come, then by the number of Yes answers, then by Yes plus If need be.'
+      : 'Ranked by the number of Yes answers, then by Yes plus If need be.'),
+    h('div', { class: 'panel' }, profile, legend),
+    h('div', { style: 'margin-top:1rem' }, ranked));
+
+  /* Answer form */
+  const reqList = h('datalist', { id: 'req-names' }, poll.required.map(n => h('option', { value: n })));
+  const nameIn = h('input', { type: 'text', id: 'a-name', list: 'req-names', maxlength: 60, value: draft.name,
+    placeholder: 'First name and surname', autocomplete: 'name', oninput: e => { draft.name = e.target.value; } });
+  const commentIn = h('input', { type: 'text', id: 'a-comment', maxlength: 300, value: draft.comment,
+    placeholder: 'e.g. I can only join online on Thursday', oninput: e => { draft.comment = e.target.value; } });
+  const errBox = h('p', { class: 'error', role: 'alert' });
+
+  const OPTS = [['y', 'Yes'], ['m', 'If need be'], ['n', 'No']];
+  const dayBlocks = [...slotsByDate].map(([date, slots]) => h('div', { class: 'day-block' },
+    h('div', { class: 'day-title' }, dateLabel(date, true)),
+    slots.map(s => {
+      const st = statOf(s.id);
+      return h('div', { class: 'ans-row' },
+        h('div', { class: 'ans-time' }, timeRange(s.start, dur)),
+        h('div', { class: 'ans-tally' }, st.yes.length || st.maybe.length ? `${st.yes.length} yes, ${st.maybe.length} if need be` : ''),
+        h('div', { class: 'seg', role: 'radiogroup', 'aria-label': slotLabel(s, dur) },
+          OPTS.map(([v, lbl]) => h('label', {},
+            h('input', { type: 'radio', name: 'a-' + s.id, value: v, checked: draft.answers[s.id] === v, disabled: poll.closed,
+              onchange: () => { draft.answers[s.id] = v; } }),
+            h('span', {}, lbl)))));
+    })));
+
+  function setAll(v) {
+    for (const s of poll.slots) draft.answers[s.id] = v;
+    document.querySelectorAll(`.seg input[value="${v}"]`).forEach(el => { el.checked = true; });
+  }
+
+  async function submit(ev) {
+    const btn = ev.currentTarget;
+    errBox.textContent = '';
+    if (!draft.name.trim()) { errBox.textContent = 'Enter your name.'; nameIn.focus(); return; }
+    const unanswered = poll.slots.filter(s => !draft.answers[s.id]).length;
+    if (unanswered === poll.slots.length) { errBox.textContent = 'Mark at least one time option.'; return; }
+    const answers = {};
+    for (const s of poll.slots) answers[s.id] = draft.answers[s.id] || 'n';
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const res = await api({ action: 'respond', poll: poll.id, name: draft.name, comment: draft.comment,
+        answers, rid: me && me.rid, token: me && me.token });
+      store('poll-me-' + poll.id, { rid: res.rid, token: res.token });
+      toast(`Saved. Thanks, ${draft.name.trim().split(' ')[0]}.`);
+      draft = null;
+      await loadPoll(true);
+    } catch (e) {
+      errBox.textContent = e.message;
+      btn.disabled = false; btn.textContent = myRow ? 'Update my answers' : 'Save my answers';
+    }
+  }
+
+  const form = h('section', {},
+    h('h2', {}, myRow ? 'Your answers' : 'Add your availability'),
+    h('p', { class: 'hint' }, myRow
+      ? 'You answered on this device. Change anything and save again.'
+      : 'Mark every option. Choose If need be when you could come but would rather not. Anything left blank counts as No.'),
+    poll.closed ? h('p', { class: 'hint' }, 'The organiser has closed this poll, so answers can no longer change.') :
+    h('div', { class: 'panel stack' },
+      h('div', { class: 'row' },
+        h('div', {}, h('label', { class: 'field', for: 'a-name' }, 'Your name'), nameIn, reqList),
+        h('div', {}, h('label', { class: 'field', for: 'a-comment' }, 'Comment ', h('span', { class: 'field-note' }, '(optional)')), commentIn)),
+      h('div', { class: 'btn-row' },
+        h('span', { class: 'field-note' }, 'Quick fill:'),
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => setAll('y') }, 'Yes to all'),
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => setAll('n') }, 'No to all')),
+      h('div', {}, dayBlocks),
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'btn', type: 'button', onclick: submit }, myRow ? 'Update my answers' : 'Save my answers')),
+      errBox));
+
+  /* Matrix */
+  const reqSet = new Set(poll.required.map(norm));
+  const people = [...responses].sort((x, y) => (reqSet.has(norm(y.name)) - reqSet.has(norm(x.name))) || x.name.localeCompare(y.name));
+  const cellText = { y: 'Yes', m: 'If need be', n: 'No' };
+  const matrix = h('section', { class: 'wide' },
+    h('div', { class: 'wrap' },
+      h('h2', {}, 'Everyone\'s answers'),
+      h('p', { class: 'hint' }, 'Scroll sideways to see every option.')),
+    responses.length === 0 && !a.reqPending.length ? h('div', { class: 'wrap' }, h('p', { class: 'hint' }, 'Answers will appear here.')) :
+    h('div', { class: 'matrix-wrap' }, h('table', { class: 'matrix' },
+      h('thead', {}, h('tr', {},
+        h('th', { class: 'name', scope: 'col' }, 'Name'),
+        poll.slots.map(s => h('th', { scope: 'col', class: s.id === a.best ? 'best-col' : '' },
+          h('b', {}, dateLabel(parts(s.start).date)), timeRange(s.start, dur))),
+        isAdmin ? h('th', { scope: 'col' }, '') : null)),
+      h('tbody', {},
+        people.map(r => h('tr', {},
+          h('td', { class: 'name', title: r.comment || r.name }, r.name,
+            reqSet.has(norm(r.name)) ? h('span', { class: 'tag' }, 'required') : null,
+            me && r.rid === me.rid ? h('span', { class: 'tag you' }, 'you') : null),
+          poll.slots.map(s => {
+            const v = r.answers[s.id] || 'n';
+            return h('td', { class: `c-${v}` + (s.id === a.best ? ' best-col' : ''), 'aria-label': cellText[v] },
+              v === 'y' ? '✓' : v === 'm' ? '(✓)' : '–');
+          }),
+          isAdmin ? h('td', {}, h('button', { class: 'linkbtn', type: 'button', onclick: () => adminOp('delete', r.rid, `Remove ${r.name}'s answers?`) }, 'Remove')) : null)),
+        a.reqPending.map(n => h('tr', { class: 'pending' },
+          h('td', { class: 'name' }, n, h('span', { class: 'tag' }, 'required'), ' no answer yet'),
+          poll.slots.map(s => h('td', { class: 'c-none' + (s.id === a.best ? ' best-col' : '') }, '·')),
+          isAdmin ? h('td') : null))),
+      h('tfoot', {},
+        h('tr', {}, h('td', { class: 'name' }, 'Yes'),
+          a.stats.map(st => h('td', { class: st.slot.id === a.best ? 'best-col' : '' }, st.yes.length)), isAdmin ? h('td') : null),
+        h('tr', {}, h('td', { class: 'name' }, 'If need be'),
+          a.stats.map(st => h('td', { class: st.slot.id === a.best ? 'best-col' : '' }, st.maybe.length)), isAdmin ? h('td') : null)))),
+    responses.some(r => r.comment) ? h('div', { class: 'wrap' },
+      h('h3', {}, 'Comments'),
+      h('ul', { class: 'comments' }, responses.filter(r => r.comment).map(r =>
+        h('li', {}, h('strong', {}, r.name + ': '), r.comment)))) : null);
+
+  /* Admin */
+  let admin = null;
+  if (isAdmin) {
+    const finalSel = h('select', { id: 'ad-final' },
+      h('option', { value: '' }, 'Not confirmed yet'),
+      a.ranked.map(st => h('option', { value: st.slot.id, selected: st.slot.id === poll.finalSlot },
+        `${slotLabel(st.slot, dur)} (${st.yes.length} yes, ${st.maybe.length} if need be${st.ok ? '' : ', ruled out'})`)));
+    const reqIn = h('textarea', { id: 'ad-req' }, poll.required.join('\n'));
+    admin = h('section', {},
+      h('h2', {}, 'Organiser tools'),
+      h('p', { class: 'hint' }, 'Only people with your admin link see this section.'),
+      h('div', { class: 'panel stack' },
+        copyField('Share link', `${location.origin + location.pathname}?poll=${poll.id}`),
+        h('div', {}, h('label', { class: 'field', for: 'ad-final' }, 'Confirmed time'), finalSel,
+          h('div', { class: 'btn-row', style: 'margin-top:0.5rem' },
+            h('button', { class: 'btn small', type: 'button', onclick: () => adminOp('final', finalSel.value) }, 'Save confirmed time'))),
+        h('div', {}, h('label', { class: 'field', for: 'ad-req' }, 'Required attendees ', h('span', { class: 'field-note' }, '(one per line)')), reqIn,
+          h('div', { class: 'btn-row', style: 'margin-top:0.5rem' },
+            h('button', { class: 'btn small', type: 'button',
+              onclick: () => adminOp('required', reqIn.value.split('\n').map(s => s.trim()).filter(Boolean)) }, 'Save required attendees'))),
+        h('div', { class: 'btn-row' },
+          h('button', { class: 'btn ghost small', type: 'button', onclick: () => adminOp('close', !poll.closed) }, poll.closed ? 'Reopen poll' : 'Close poll'),
+          h('button', { class: 'btn ghost small', type: 'button', onclick: () => downloadCsv(poll, responses, a) }, 'Download CSV'))));
+  }
+
+  const scrollY = window.scrollY;
+  app.replaceChildren(
+    h('div', { class: 'wrap' }, header, banners, overview, form),
+    matrix,
+    h('div', { class: 'wrap' }, admin,
+      h('section', { class: 'btn-row' },
+        h('button', { class: 'btn ghost small', type: 'button', onclick: () => loadPoll(true).then(() => toast('Answers refreshed.')) }, 'Refresh answers'),
+        h('a', { href: location.pathname, style: 'margin-left:auto' }, 'Create your own poll'))));
+  window.scrollTo(0, scrollY);
+}
+
+async function adminOp(op, value, confirmMsg) {
+  if (confirmMsg && !confirm(confirmMsg)) return;
+  try {
+    await api({ action: 'admin', poll: pollId, admin: adminKey, op, value });
+    toast({ final: 'Confirmed time saved.', required: 'Required attendees saved.', delete: 'Answers removed.',
+      close: value ? 'Poll closed.' : 'Poll reopened.' }[op]);
+    await loadPoll(true);
+  } catch (e) { toast(e.message); }
+}
+
+function downloadCsv(poll, responses, a) {
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const dur = poll.durationMin;
+  const lines = [['Name', ...poll.slots.map(s => slotLabel(s, dur)), 'Comment'].map(q).join(',')];
+  const word = { y: 'Yes', m: 'If need be', n: 'No' };
+  for (const r of responses) lines.push([r.name, ...poll.slots.map(s => word[r.answers[s.id] || 'n']), r.comment || ''].map(q).join(','));
+  lines.push(['Total yes', ...a.stats.map(st => st.yes.length), ''].map(q).join(','));
+  lines.push(['Total if need be', ...a.stats.map(st => st.maybe.length), ''].map(q).join(','));
+  const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const link = h('a', { href: URL.createObjectURL(blob), download: `${poll.title.replace(/[^\w-]+/g, '_')}.csv` });
+  document.body.appendChild(link); link.click(); link.remove();
+}
+
+/* ── Start ── */
+if (pollId) {
+  loadPoll();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && data) {
+      // Refresh on return, but don't wipe answers someone is typing.
+      const typing = draft && (draft.name || Object.keys(draft.answers).length);
+      if (!typing) { draft = null; loadPoll(true); }
+    }
+  });
+} else {
+  renderCreate();
+}
+</script>
+</body>
+</html>
